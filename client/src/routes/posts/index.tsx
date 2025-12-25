@@ -1,7 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import "./-styles/posts.css";
 import { fetchPosts, postsOptions } from "./-services/fetch-posts";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import { deletePost } from "./$postId/-services/delete-post";
 
 type RouteSearch = {
   page: number;
@@ -52,8 +57,19 @@ function RouteComponent() {
       return true;
     },
   });
-
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const deletePostMutation = useMutation({
+    mutationFn: deletePost,
+    async onSuccess() {
+      await queryClient.invalidateQueries({
+        queryKey: ["posts", { page }],
+      });
+    },
+    onError(error) {
+      alert((error as Error).message);
+    },
+  });
 
   return (
     <div className="posts-container">
@@ -65,7 +81,7 @@ function RouteComponent() {
             </Link>
             <button
               onClick={async () => {
-                // TODO: 게시글 삭제
+                deletePostMutation.mutate(post.id);
               }}
             >
               Delete
